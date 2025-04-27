@@ -17,6 +17,7 @@ import easyocr
 import time
 from transformers import BlipProcessor, BlipForConditionalGeneration
 from pykospacing import Spacing
+from hanspell import spell_checker  # 맞춤법 검사기 추가
 import pandas as pd
 from fastapi import FastAPI, Body, HTTPException
 from pydantic import BaseModel
@@ -62,11 +63,15 @@ def enhance_image(img):
     img = img.resize((img.width * 2, img.height * 2))
     return img
 
+# 개선된 correct_spacing 함수 (이전 친구 코드에서 가져옴)
 def correct_spacing(text):
+    spaced = spacing_model(text)
     try:
-        return spacing_model(text)
+        # 맞춤법 검사 추가
+        checked = spell_checker.check(spaced).checked
+        return checked
     except:
-        return text
+        return spaced  # 오류 발생시 원래 간격 조정된 텍스트 반환
 
 def extract_tables_as_markdown(image):
     text = pytesseract.image_to_string(image, lang='kor+eng')
@@ -207,7 +212,7 @@ def answer_question(question, collection, model):
             f"보기가 ',' 또는 '/'로 구분되어 있다면 객관식 문제로 판단하여 그에 따른 정답을 선택하라."
         )
         fallback_response = client.chat.completions.create(
-            model="gpt-4-turbo",
+            model="gpt-4-turbo",  # 친구 B 코드의 모델 유지
             messages=[{"role": "user", "content": fallback_prompt}]
         )
         second_answer = fallback_response.choices[0].message.content
@@ -225,7 +230,7 @@ def answer_question(question, collection, model):
             f"가능한 한 PDF의 내용에서 추론하며, 관련 정보가 부족할 경우 '모르겠습니다. 다만, 제가 생각하기에는'라는 서술어를 포함하여 답변하라."
         )
         response = client.chat.completions.create(
-            model="gpt-4-turbo",
+            model="gpt-4-turbo",  # 친구 B 코드의 모델 유지
             messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content

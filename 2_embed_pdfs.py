@@ -36,7 +36,6 @@ def embed_pdfs(api_url="http://localhost:8000"):
         response = requests.post(
             f"{api_url}/embed_pdfs",
             json={"execute": True},
-            timeout=3600  # 1시간 타임아웃 (큰 PDF 파일 처리를 위해)
         )
         
         if response.status_code == 200:
